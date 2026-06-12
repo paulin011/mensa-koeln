@@ -3,6 +3,7 @@ importer so no network access is needed)."""
 
 import os
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -125,6 +126,77 @@ class ApiTest(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Mensa", response.data)
+
+
+class RatingsApiTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        meals = build_meals(make_dish())
+        cls.key = meals[0]["rating_key"]
+        cls.fake_plan = {
+            "organization": "Test",
+            "source": "https://example.org",
+            "range": {"start": "2026-06-15", "end": "2026-06-19"},
+            "fetched_at": "2026-06-15T00:00:00+00:00",
+            "days": ["2026-06-15"],
+            "allergen_legend": {},
+            "menu": {"unimensa": {"2026-06-15": meals}},
+        }
+
+    def setUp(self):
+        fd, self.db_path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        self.patchers = [
+            mock.patch.object(server, "get_plan", return_value=self.fake_plan),
+            mock.patch.object(server, "DB_PATH", self.db_path),
+        ]
+        for p in self.patchers:
+            p.start()
+        self.client = server.app.test_client()
+
+    def tearDown(self):
+        for p in self.patchers:
+            p.stop()
+        os.unlink(self.db_path)
+
+    def rate(self, **overrides):
+        payload = {"key": self.key, "stars": 4, "client": "client-aaaa-0001"}
+        payload.update(overrides)
+        return self.client.post("/api/rate", json=payload)
+
+    def test_rate_and_aggregate(self):
+        response = self.rate(stars=4)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"avg": 4.0, "count": 1, "mine": 4})
+
+        self.rate(stars=2, client="client-bbbb-0002")
+        data = self.client.get("/api/ratings").get_json()
+        self.assertEqual(data[self.key], {"avg": 3.0, "count": 2})
+
+    def test_re_rating_updates_not_duplicates(self):
+        self.rate(stars=5)
+        self.rate(stars=1)
+        data = self.client.get("/api/ratings").get_json()
+        self.assertEqual(data[self.key], {"avg": 1.0, "count": 1})
+
+    def test_own_rating_included_for_client(self):
+        self.rate(stars=3)
+        data = self.client.get("/api/ratings?client=client-aaaa-0001").get_json()
+        self.assertEqual(data[self.key]["mine"], 3)
+        anon = self.client.get("/api/ratings").get_json()
+        self.assertNotIn("mine", anon[self.key])
+
+    def test_validation(self):
+        self.assertEqual(self.rate(stars=0).status_code, 400)
+        self.assertEqual(self.rate(stars=6).status_code, 400)
+        self.assertEqual(self.rate(stars="4").status_code, 400)
+        self.assertEqual(self.rate(client="x").status_code, 400)
+        self.assertEqual(self.rate(key="DROP TABLE").status_code, 400)
+        self.assertEqual(self.rate(key="not-a-known-meal").status_code, 400)
+
+    def test_meal_model_has_rating_key(self):
+        self.assertTrue(self.key)
+        self.assertRegex(self.key, r"^[a-z0-9-]+$")
 
 
 if __name__ == "__main__":

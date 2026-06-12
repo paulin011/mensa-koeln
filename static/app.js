@@ -30,6 +30,8 @@ const STR = {
     source: "Quelle",
     updated: "Stand",
     load_error: "Fehler beim Laden des Speiseplans",
+    rate: "Bewerten",
+    ratings: (n) => `${n} ${n === 1 ? "Bewertung" : "Bewertungen"}`,
   },
   en: {
     lunch: "🌤️ Lunch",
@@ -57,6 +59,8 @@ const STR = {
     source: "Source",
     updated: "Updated",
     load_error: "Failed to load the menu",
+    rate: "Rate",
+    ratings: (n) => `${n} rating${n === 1 ? "" : "s"}`,
   },
 };
 
@@ -73,7 +77,18 @@ const state = {
   priceRole: localStorage.getItem("mensa.priceRole") || "student",
   lang: localStorage.getItem("mensa.lang") || "de",
   excluded: new Set(JSON.parse(localStorage.getItem("mensa.excludedAllergens") || "[]")),
+  ratings: {},
+  clientId: getClientId(),
 };
+
+function getClientId() {
+  let id = localStorage.getItem("mensa.client");
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem("mensa.client", id);
+  }
+  return id;
+}
 
 const $ = (sel) => document.querySelector(sel);
 const t = () => STR[state.lang];
@@ -81,9 +96,13 @@ const t = () => STR[state.lang];
 /* ---------- init & routing ---------- */
 
 async function init() {
-  const res = await fetch("api/plan");
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  state.plan = await res.json();
+  const [planRes, ratingsRes] = await Promise.all([
+    fetch("api/plan"),
+    fetch(`api/ratings?client=${encodeURIComponent(state.clientId)}`).catch(() => null),
+  ]);
+  if (!planRes.ok) throw new Error(`HTTP ${planRes.status}`);
+  state.plan = await planRes.json();
+  if (ratingsRes?.ok) state.ratings = await ratingsRes.json();
 
   readHash();
   if (!state.plan.menu[state.canteen]) state.canteen = Object.keys(state.plan.canteens)[0];
@@ -506,7 +525,57 @@ function mealCard(meal, currentServing, compact = false) {
     </div>
     ${badges.length ? `<div class="meal-badges">${badges.join("")}</div>` : ""}
     ${allergens}`;
+  if (meal.rating_key) card.appendChild(ratingRow(meal));
   return card;
+}
+
+function ratingRow(meal) {
+  const s = t();
+  const row = document.createElement("div");
+  row.className = "meal-rating";
+
+  const render = () => {
+    row.innerHTML = "";
+    const r = state.ratings[meal.rating_key] || {};
+    const mine = r.mine || 0;
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.createElement("button");
+      btn.className = "star" + (i <= mine ? " filled" : "");
+      btn.textContent = i <= mine ? "★" : "☆";
+      btn.title = `${s.rate}: ${i}/5`;
+      btn.addEventListener("click", () => submit(i));
+      row.appendChild(btn);
+    }
+    const info = document.createElement("span");
+    info.className = "rating-avg";
+    info.textContent = r.count ? `Ø ${r.avg.toFixed(1).replace(".", state.lang === "de" ? "," : ".")} · ${s.ratings(r.count)}` : s.rate;
+    row.appendChild(info);
+  };
+
+  const submit = async (stars) => {
+    try {
+      const res = await fetch("api/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: meal.rating_key, stars, client: state.clientId }),
+      });
+      if (res.ok) {
+        state.ratings[meal.rating_key] = await res.json();
+        // refresh every visible rating row for this meal (it can appear in
+        // several sections/sheets at once)
+        document
+          .querySelectorAll(`.meal-rating[data-key="${CSS.escape(meal.rating_key)}"]`)
+          .forEach((el) => el.dispatchEvent(new CustomEvent("rating-update")));
+      }
+    } catch {
+      /* offline: keep current display */
+    }
+  };
+
+  row.dataset.key = meal.rating_key;
+  row.addEventListener("rating-update", render);
+  render();
+  return row;
 }
 
 function renderFooter() {

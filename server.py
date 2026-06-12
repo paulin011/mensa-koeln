@@ -16,6 +16,8 @@ config (scraped API key) is cached for 12 h.
 import json
 import logging
 import os
+import re
+import sqlite3
 import threading
 import time
 
@@ -28,6 +30,10 @@ STATIC_DIR = os.path.join(APP_DIR, "static")
 
 PLAN_TTL = int(os.environ.get("MENSA_PLAN_TTL", "1800"))
 CONFIG_TTL = int(os.environ.get("MENSA_CONFIG_TTL", str(12 * 3600)))
+DB_PATH = os.environ.get("MENSA_DB_PATH", os.path.join(APP_DIR, "data", "ratings.db"))
+
+RATING_KEY_RE = re.compile(r"^[a-z0-9-]{1,120}$")
+CLIENT_ID_RE = re.compile(r"^[a-zA-Z0-9-]{8,64}$")
 
 with open(os.path.join(APP_DIR, "data", "canteens.json"), encoding="utf8") as f:
     CANTEENS = json.load(f)
@@ -120,6 +126,84 @@ def group_meals(meals):
         mealtimes.append({"mealtime": mt, "groups": groups})
 
     return {"mealtimes": mealtimes, "sides": sides}
+
+
+def _db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS ratings (
+            rating_key TEXT NOT NULL,
+            client_id  TEXT NOT NULL,
+            stars      INTEGER NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (rating_key, client_id)
+        )"""
+    )
+    return conn
+
+
+def _known_rating_keys(plan):
+    return {
+        meal["rating_key"]
+        for days in plan["menu"].values()
+        for meals in days.values()
+        for meal in meals
+        if meal.get("rating_key")
+    }
+
+
+def _rating_aggregate(conn, key):
+    row = conn.execute(
+        "SELECT AVG(stars), COUNT(*) FROM ratings WHERE rating_key = ?", (key,)
+    ).fetchone()
+    return {"avg": round(row[0], 2) if row[0] is not None else None, "count": row[1]}
+
+
+@app.get("/api/ratings")
+def api_ratings():
+    """All rating aggregates; pass ?client=<id> to include your own votes."""
+    client = request.args.get("client", "")
+    with _db() as conn:
+        out = {}
+        for key, avg, count in conn.execute(
+            "SELECT rating_key, AVG(stars), COUNT(*) FROM ratings GROUP BY rating_key"
+        ):
+            out[key] = {"avg": round(avg, 2), "count": count}
+        if CLIENT_ID_RE.match(client):
+            for key, stars in conn.execute(
+                "SELECT rating_key, stars FROM ratings WHERE client_id = ?", (client,)
+            ):
+                out.setdefault(key, {"avg": None, "count": 0})["mine"] = stars
+    return jsonify(out)
+
+
+@app.post("/api/rate")
+def api_rate():
+    data = request.get_json(silent=True) or {}
+    key = str(data.get("key") or "")
+    client = str(data.get("client") or "")
+    stars = data.get("stars")
+
+    if not RATING_KEY_RE.match(key):
+        abort(400, description="Invalid rating key")
+    if not CLIENT_ID_RE.match(client):
+        abort(400, description="Invalid client id")
+    if not isinstance(stars, int) or not 1 <= stars <= 5:
+        abort(400, description="stars must be an integer from 1 to 5")
+    if key not in _known_rating_keys(get_plan()):
+        abort(400, description="Unknown meal")
+
+    with _db() as conn:
+        conn.execute(
+            """INSERT INTO ratings (rating_key, client_id, stars, updated_at)
+               VALUES (?, ?, ?, datetime('now'))
+               ON CONFLICT (rating_key, client_id)
+               DO UPDATE SET stars = excluded.stars, updated_at = excluded.updated_at""",
+            (key, client, stars),
+        )
+        result = _rating_aggregate(conn, key)
+    result["mine"] = stars
+    return jsonify(result)
 
 
 @app.get("/api/canteens")

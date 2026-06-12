@@ -539,6 +539,9 @@ def build_meal(dish, fields, legend, icon_labels):
 
     return {
         "id": dish.get("id"),
+        # stable identity for ratings: the same dish (by name) is served at
+        # many canteens and reappears across weeks
+        "rating_key": re.sub(r"[^a-z0-9]+", "-", _normalize_text(name)).strip("-"),
         "name": name,
         "name_en": (components_en[0]["name"] if components_en else None)
         or (str(dish.get("name_en") or "").strip() or None),

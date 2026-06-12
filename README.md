@@ -52,6 +52,11 @@ Vanilla JS single-page app, no build step:
 - Side dishes in a bottom sheet (🥗 button)
 - Serving groups whose time window has passed today are greyed out
 - German/English toggle (uses the API's English fields where present)
+- **Meal ratings**: 1–5 stars per dish. Ratings attach to the dish name (the
+  same meal is served at many canteens), so averages accumulate across
+  locations and weeks. One vote per browser (anonymous client id in
+  localStorage); re-rating updates your previous vote. Stored in SQLite
+  (`data/ratings.db`, override with `MENSA_DB_PATH`)
 - PWA: installable, last loaded plan readable offline (service worker)
 - Light/dark theme via `prefers-color-scheme`
 
@@ -70,8 +75,10 @@ memory for 30 min. Env vars: `MENSA_PORT`, `MENSA_HOST`, `MENSA_PLAN_TTL`.
 
 ```sh
 docker build -t mensa-koeln .
-docker run -d -p 8000:8000 --restart unless-stopped mensa-koeln
+docker run -d -p 8000:8000 -v mensa-data:/app/data --restart unless-stopped mensa-koeln
 ```
+
+The volume keeps `ratings.db` across container rebuilds.
 
 Or without Docker: `pip install -r requirements.txt gunicorn` and
 `gunicorn --bind 0.0.0.0:8000 --workers 2 server:app` (behind a reverse proxy
@@ -85,6 +92,8 @@ for TLS).
 | `GET /api/plan` | Full normalized plan for all canteens, flat meal lists |
 | `GET /api/plan/<id>` | One canteen; per day `{mealtimes: [...], sides: [...]}`, meals grouped by serving spot |
 | `GET /api/refresh` | Force a re-fetch from the upstream API |
+| `GET /api/ratings` | Rating aggregates `{key: {avg, count}}`; `?client=<id>` adds your own votes as `mine` |
+| `POST /api/rate` | Body `{"key", "stars": 1–5, "client"}`; upserts your vote, returns the new aggregate |
 
 Meal model:
 

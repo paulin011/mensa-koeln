@@ -404,6 +404,29 @@ main {
 }
 .allergen-row input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
 
+.meal-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+  margin-top: 0.4rem;
+}
+.meal-rating .star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0.1rem;
+  color: var(--muted);
+}
+.meal-rating .star.filled { color: #f59e0b; }
+.meal-rating .star:hover { color: #f59e0b; }
+.rating-avg {
+  margin-left: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .meal-card.compact { padding: 0.55rem 0.8rem; }
 .meal-card.compact .meal-name { font-size: 0.9rem; }
 .meal-card.compact .meal-price { font-size: 0.9rem; }

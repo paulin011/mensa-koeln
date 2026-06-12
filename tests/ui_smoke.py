@@ -5,6 +5,7 @@ unittest suite — run manually:  python tests/ui_smoke.py [base_url]
 """
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -159,7 +160,27 @@ def main():
             js(ws, "[...document.querySelectorAll('.badge.throughout')].length") >= 2,
         )
 
-        print("7. URL routing both ways")
+        print("7. meal rating")
+        js(ws, "location.hash = '#unimensa/2026-06-15'")
+        wait_for(ws, "document.querySelectorAll('#menu .meal-rating .star').length > 0")
+        js(ws, "localStorage.setItem('mensa.client', 'ui-smoke-test-0000')")
+        js(ws, "location.reload()")
+        wait_for(ws, "document.querySelectorAll('#menu .meal-rating .star').length > 0")
+        js(ws, "document.querySelector('#menu .meal-rating .star:nth-child(4)').click()")
+        wait_for(ws, "document.querySelectorAll('#menu .meal-rating .star.filled').length === 4")
+        check("stars fill after rating", True)
+        check(
+            "average shown",
+            "Ø" in js(ws, "document.querySelector('#menu .meal-rating .rating-avg').textContent"),
+        )
+        js(ws, "location.reload()")
+        wait_for(ws, "document.querySelectorAll('#menu .meal-rating .star').length > 0")
+        check(
+            "own rating restored after reload",
+            js(ws, "document.querySelectorAll('#menu .meal-rating .star.filled').length") == 4,
+        )
+
+        print("8. URL routing both ways")
         js(ws, "location.hash = '#robertkoch/2026-06-15'")
         wait_for(ws, "document.querySelector('#canteen-select').value === 'robertkoch'")
         check("hash → canteen select", True)
@@ -171,6 +192,17 @@ def main():
     finally:
         proc.terminate()
         proc.wait()
+        # remove the test client's vote so it doesn't skew real ratings
+        try:
+            import sqlite3
+
+            db = os.path.join(os.path.dirname(__file__), "..", "data", "ratings.db")
+            conn = sqlite3.connect(db)
+            conn.execute("DELETE FROM ratings WHERE client_id = 'ui-smoke-test-0000'")
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
     failed = [name for name, ok in checks if not ok]
     print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed")
