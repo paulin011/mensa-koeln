@@ -1,0 +1,420 @@
+:root {
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --text: #1c1e21;
+  --muted: #65676b;
+  --accent: #c2410c;
+  --accent-soft: #ffedd5;
+  --vegan: #15803d;
+  --vegan-soft: #dcfce7;
+  --veggie: #65a30d;
+  --veggie-soft: #ecfccb;
+  --fish: #0369a1;
+  --fish-soft: #e0f2fe;
+  --meat: #b91c1c;
+  --meat-soft: #fee2e2;
+  --border: #e4e6eb;
+  --radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121417;
+    --card: #1e2126;
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #fb923c;
+    --accent-soft: #3b2a1a;
+    --vegan-soft: #14301f;
+    --vegan: #4ade80;
+    --veggie-soft: #25320f;
+    --veggie: #a3e635;
+    --fish-soft: #102a3d;
+    --fish: #7dd3fc;
+    --meat-soft: #3b1515;
+    --meat: #fca5a5;
+    --border: #33373d;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.topbar h1 { font-size: 1.2rem; margin: 0; white-space: nowrap; }
+
+#canteen-select {
+  flex: 1;
+  min-width: 200px;
+  font-size: 1rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.canteen-info {
+  max-width: 900px;
+  margin: 0.3rem auto 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.day-nav {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.7rem 1rem 0.3rem;
+  max-width: 900px;
+  margin: 0 auto;
+  scrollbar-width: none;
+}
+.day-nav::-webkit-scrollbar { display: none; }
+
+.day-nav button {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+}
+.day-nav button .dow { font-weight: 600; }
+.day-nav button .date { font-size: 0.72rem; color: var(--muted); }
+.day-nav button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.day-nav button.active .date { color: rgba(255, 255, 255, 0.85); }
+.day-nav button.empty { opacity: 0.45; }
+
+.filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0.4rem 1rem 0.2rem;
+  flex-wrap: wrap;
+}
+
+.diet-filters { display: flex; gap: 0.4rem; }
+.diet-filters button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.diet-filters button.active {
+  background: var(--vegan);
+  border-color: var(--vegan);
+  color: #fff;
+}
+.diet-filters button[data-diet="all"].active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#price-role {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 2rem;
+}
+
+.mealtime-section > h2 {
+  font-size: 1.05rem;
+  margin: 1.2rem 0 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.line-group { margin-bottom: 1rem; }
+
+.line-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0.7rem 0 0.4rem;
+}
+.line-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.line-serving {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.meal-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.meal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.meal-name { font-weight: 600; font-size: 1rem; }
+
+.meal-price {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+}
+.meal-price small {
+  display: block;
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.meal-components {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.meal-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.badge {
+  font-size: 0.72rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-weight: 600;
+}
+.badge.vegan { background: var(--vegan-soft); color: var(--vegan); }
+.badge.vegetarian { background: var(--veggie-soft); color: var(--veggie); }
+.badge.fish { background: var(--fish-soft); color: var(--fish); }
+.badge.meat { background: var(--meat-soft); color: var(--meat); }
+.badge.info { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.badge.serving { background: var(--bg); color: var(--muted); font-weight: 500; border: 1px solid var(--border); }
+.badge.throughout { background: var(--fish-soft); color: var(--fish); }
+.badge.sides { background: var(--veggie-soft); color: var(--veggie); font-weight: 500; }
+
+.meal-allergens { margin-top: 0.45rem; font-size: 0.78rem; }
+.meal-allergens summary {
+  cursor: pointer;
+  color: var(--muted);
+  user-select: none;
+}
+.meal-allergens ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 3rem 1rem;
+  font-size: 0.95rem;
+}
+
+.icon-button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filters-right { display: flex; gap: 0.4rem; align-items: center; }
+
+.chip-button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.chip-button.active {
+  background: var(--meat-soft);
+  border-color: var(--meat);
+  color: var(--meat);
+}
+
+/* groups whose serving window has passed today */
+.line-group.past { opacity: 0.45; }
+.past-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+/* sides bottom bar + sheets */
+#sides-bar {
+  position: fixed;
+  bottom: 0.8rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+#sides-button {
+  pointer-events: auto;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.sheet[hidden],
+#sheet-backdrop[hidden],
+#sides-bar[hidden] { display: none !important; }
+
+#sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 30;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 75vh;
+  background: var(--card);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  max-width: 900px;
+  margin: 0 auto;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
+}
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem 0.5rem;
+}
+.sheet-header h2 { margin: 0; font-size: 1.05rem; }
+.sheet-close {
+  border: none;
+  background: var(--bg);
+  color: var(--muted);
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.sheet-hint {
+  margin: 0;
+  padding: 0 1.2rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.sheet-body {
+  overflow-y: auto;
+  padding: 0.3rem 1.2rem 1.2rem;
+}
+
+.allergen-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.2rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.allergen-row input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+
+.meal-card.compact { padding: 0.55rem 0.8rem; }
+.meal-card.compact .meal-name { font-size: 0.9rem; }
+.meal-card.compact .meal-price { font-size: 0.9rem; }
+
+body.sheet-open { overflow: hidden; }
+
+main { padding-bottom: 4.5rem; }
+
+footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 1rem;
+}

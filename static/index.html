@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#c2410c">
+  <title>Mensa Köln</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>🍽️ Mensa Köln</h1>
+      <select id="canteen-select" aria-label="Mensa auswählen"></select>
+      <button id="lang-toggle" class="icon-button" aria-label="Sprache wechseln">EN</button>
+    </div>
+    <div class="canteen-info" id="canteen-info"></div>
+  </header>
+
+  <nav class="day-nav" id="day-nav" aria-label="Tag auswählen"></nav>
+
+  <div class="filters">
+    <div class="diet-filters" id="diet-filters">
+      <button data-diet="all" class="active"></button>
+      <button data-diet="vegetarian"></button>
+      <button data-diet="vegan"></button>
+    </div>
+    <div class="filters-right">
+      <button id="allergen-button" class="chip-button"></button>
+      <select id="price-role" aria-label="Preisgruppe"></select>
+    </div>
+  </div>
+
+  <main id="menu"></main>
+
+  <div id="sides-bar" hidden>
+    <button id="sides-button"></button>
+  </div>
+
+  <div id="sheet-backdrop" hidden></div>
+  <div id="sides-sheet" class="sheet" role="dialog" aria-modal="true" hidden>
+    <div class="sheet-header">
+      <h2 id="sides-title"></h2>
+      <button class="sheet-close" data-close aria-label="Schließen">✕</button>
+    </div>
+    <div class="sheet-body" id="sides-body"></div>
+  </div>
+  <div id="allergen-sheet" class="sheet" role="dialog" aria-modal="true" hidden>
+    <div class="sheet-header">
+      <h2 id="allergen-title"></h2>
+      <button class="sheet-close" data-close aria-label="Schließen">✕</button>
+    </div>
+    <p class="sheet-hint" id="allergen-hint"></p>
+    <div class="sheet-body" id="allergen-body"></div>
+  </div>
+
+  <footer>
+    <span id="meta-info"></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
